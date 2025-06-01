@@ -1,5 +1,5 @@
-import { AppLayout } from "@/components/layout/AppLayout";
+import { FeedList } from "@/components/feed/FeedList";
 
 export default function Home() {
-  return <AppLayout />;
+  return <FeedList />;
 }

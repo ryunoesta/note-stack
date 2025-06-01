@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -8,6 +9,15 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { useState } from "react";
+import { useArticleNoteContext } from "../layout/ArticleNoteContext";
 
 export type FeedItem = {
   id: string;
@@ -30,12 +40,39 @@ export function FeedItemCard({
   onNote?: (id: string) => void;
   onSummary?: (id: string) => void;
 }) {
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const { markAsRead } = useArticleNoteContext();
+
+  function handleSummary() {
+    setSummaryOpen(true);
+    setLoading(true);
+    setAiSummary(null);
+    setTimeout(() => {
+      setAiSummary(
+        "【AI要約】この記事はNext.js 15の新機能やReact 19対応、Turbopack統合などのポイントを簡潔にまとめています。"
+      );
+      setLoading(false);
+    }, 1500);
+  }
+
+  function handleReadToggle() {
+    markAsRead(item.id);
+    onReadToggle?.(item.id);
+  }
+
   return (
     <Card className="w-full max-w-2xl shadow-sm border border-border/60">
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
         <div>
           <CardTitle className="text-lg line-clamp-2 flex items-center gap-2">
-            {item.title}
+            <Link
+              href={`/article/${item.id}`}
+              className="hover:underline focus:underline"
+            >
+              {item.title}
+            </Link>
             {!item.read && (
               <span className="ml-2 text-xs text-white bg-blue-500 rounded px-2 py-0.5">
                 NEW
@@ -53,7 +90,7 @@ export function FeedItemCard({
           size="icon"
           variant={item.read ? "outline" : "secondary"}
           aria-label={item.read ? "未読にする" : "既読にする"}
-          onClick={() => onReadToggle?.(item.id)}
+          onClick={handleReadToggle}
         >
           {item.read ? "👁️" : "🕶️"}
         </Button>
@@ -70,16 +107,30 @@ export function FeedItemCard({
           ))}
         </div>
         <div className="flex gap-2 pt-2">
-          <Button size="sm" variant="outline" onClick={() => onNote?.(item.id)}>
-            📝 ノート
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onSummary?.(item.id)}
-          >
-            🤖 要約
-          </Button>
+          <Link href={`/note/${item.id}`} passHref legacyBehavior>
+            <Button asChild size="sm" variant="outline">
+              <a>📝 ノート</a>
+            </Button>
+          </Link>
+          <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" onClick={handleSummary}>
+                🤖 要約
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>AI要約</DialogTitle>
+              </DialogHeader>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  要約中...
+                </div>
+              ) : aiSummary ? (
+                <div className="text-base whitespace-pre-line">{aiSummary}</div>
+              ) : null}
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>
